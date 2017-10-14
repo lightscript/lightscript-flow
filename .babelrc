@@ -1,0 +1,10 @@
+{
+  "presets": [
+    ["@oigroup/babel-preset-lightscript", {
+      "env": { "targets": { "node": true } }
+    }]
+  ],
+  "ignore": [
+    "node_modules"
+  ]
+}

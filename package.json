@@ -1,7 +1,22 @@
 {
   "name": "lightscript-flow",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/index.js",
   "author": "Alex Rattray <rattray.alex@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "lint": "eslint --ext .js,.lsc src",
+    "build": "babel src -x .lsc --out-dir dist",
+    "dev": "$npm_execpath run build -- --watch"
+  },
+  "devDependencies": {
+    "@oigroup/babel-preset-lightscript": "^3.0.0-beta.3",
+    "@oigroup/lightscript-eslint": "^3.0.0-beta.3",
+    "babel-cli": "^6.26.0",
+    "eslint": "^4.9.0"
+  },
+  "dependencies": {
+    "@oigroup/babel-plugin-lightscript": "^3.0.0-beta.3",
+    "babel-core": "^6.26.0"
+  }
 }

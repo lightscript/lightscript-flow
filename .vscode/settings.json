@@ -1,0 +1,8 @@
+{
+  "git.ignoreLimitWarning": true,
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "lightscript"
+  ]
+}
