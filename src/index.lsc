@@ -6,7 +6,10 @@ import {SourceMapConsumer} from 'source-map'
 import {spawn, spawnSync, execFileSync, execSync, exec, execFile} from 'child_process'
 
 // this is a very useful diagnostic
-fs.appendFileSync('.log', process.argv.slice(2).join(' ') + '\n')
+log(msg) =>
+  fs.appendFileSync('.log', msg + '\n')
+
+log! process.argv.slice(2).join(' ')
 
 type Loc = {line: number, column: number, offset: number};
 type FlowMessage = {
@@ -37,7 +40,7 @@ compileDirToTemp(srcDirPath, tmpDirPath): void ->
   ])
 
 runFlowCmdOnTemp(tmpDirPath, cmd): {stdout: FlowOutput, status: number} ->
-  fs.appendFileSync('.log', 'flow ' + cmd.join(' ') + '\n')
+  log! 'flow ' + cmd.join(' ')
 
   // TODO: sync doesn't work. Need to do normal spawn.
   {stdout, stderr, status} = spawnSync('node_modules/.bin/flow', cmd)
@@ -129,7 +132,7 @@ parseArgs(argv, srcDirPath, tmpDirPath): Array<string> ->
   args
 
 _main(argv) =>
-    srcDirPath = 'src'
+  srcDirPath = 'src'
   tmpDirPath = '.tmp_lsc_flow'
   flowArgs = parseArgs(argv, srcDirPath, tmpDirPath)
 
@@ -160,6 +163,7 @@ export main(argv: Array<string>) =>
     process.stdout.write(stdout)
     process.exit(exitCode)
   catch err:
+    log! err
     process.stderr.write(err.message)
     process.exit(3)
 
