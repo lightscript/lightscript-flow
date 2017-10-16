@@ -1,0 +1,169 @@
+// @flow
+/* eslint-disable no-console,no-unused-vars */
+import path from 'path'
+import fs from 'fs'
+import {SourceMapConsumer} from 'source-map'
+import {spawn, spawnSync, execFileSync, execSync, exec, execFile} from 'child_process'
+
+// this is a very useful diagnostic
+fs.appendFileSync('.log', process.argv.slice(2).join(' ') + '\n')
+
+type Loc = {line: number, column: number, offset: number};
+type FlowMessage = {
+  path: string,
+  context: string,
+  loc: {start: Loc, end: Loc},
+  start: number,
+  end: number,
+}
+type FlowOutput = {
+  errors?: Array<{
+    message: Array<FlowMessage>,
+  }>
+};
+
+// hopefully flow catches this error someday.
+str: string = 3
+
+compileDirToTemp(srcDirPath, tmpDirPath): void ->
+  execFileSync('node_modules/.bin/babel', [
+    srcDirPath
+    '--out-dir'
+    tmpDirPath
+    '--no-babelrc'
+    '--plugins=@oigroup/babel-plugin-lightscript'
+    '--source-maps'
+    '--extensions=.lsc,.js'
+  ])
+
+runFlowCmdOnTemp(tmpDirPath, cmd): {stdout: FlowOutput, status: number} ->
+  fs.appendFileSync('.log', 'flow ' + cmd.join(' ') + '\n')
+
+  // TODO: sync doesn't work. Need to do normal spawn.
+  {stdout, stderr, status} = spawnSync('node_modules/.bin/flow', cmd)
+
+  if stderr.length:
+    console.error! stderr.toString()
+    return { status, stdout: {} }
+
+  {
+    stdout: JSON.parse(stdout.toString())
+    status
+  }
+
+getSourceMapFor(jsFilePath) =>
+  mapFilePath = `${jsFilePath}.map`
+  sourceMap = fs.readFileSync(mapFilePath).toString()
+  smc = new SourceMapConsumer(sourceMap)
+  smc.computeColumnSpans()
+  smc
+
+remapFlowMessage(flowMessage) =>
+  {path: filePath, loc} = flowMessage
+  if not filePath: return flowMessage
+
+  smc = getSourceMapFor(filePath)
+  relativeSource = smc.sources.0 // meh
+
+  {source: _relativeSource, line: startLine, column: startColumn} = smc.originalPositionFor({
+    line: loc.start.line
+    column: loc.start.column
+  })
+  {line: endLine, column: endColumn} = smc.originalPositionFor({
+    line: loc.end.line
+    column: loc.end.column
+  })
+
+  source = path.resolve(path.join(path.dirname(filePath), relativeSource))
+
+  {
+    ...flowMessage
+    context: flowMessage.context
+    loc: {
+      ...flowMessage.loc
+      source
+      start: {
+        line: startLine
+        column: startColumn
+        offset: flowMessage.loc.start.offset // TODO
+      }
+      end: {
+        line: endLine
+        column: endColumn
+        offset: flowMessage.loc.end.offset // TODO
+      }
+    }
+    path: source
+    line: startLine
+    endline: endLine
+    start: flowMessage.start // TODO
+    end: flowMessage.end // TODO
+  }
+
+
+remap(flowOutput: FlowOutput, tmpDirPath): FlowOutput ->
+  // TODO: support things other than Diagnostics
+  if not flowOutput.errors: return flowOutput
+  {
+    ...flowOutput
+    errors: flowOutput.errors.map! (flowError) =>
+      {
+        ...flowError
+        message: flowError.message.map(remapFlowMessage)
+      }
+  }
+
+parseArgs(argv, srcDirPath, tmpDirPath): Array<string> ->
+  args = argv.slice(2)
+    .map! arg =>
+      if arg.startsWith('/') and arg.includes(srcDirPath):
+        arg
+          .replace(`/${srcDirPath}/`, `/${tmpDirPath}/`) // TODO be legit about this
+          .replace(/\.lsc$/, '.js')
+      else:
+        arg
+
+  // if args.indexOf('--json') < 0:
+  //   throw Error('Only json mode is supported at this time.')
+
+  args
+
+_main(argv) =>
+    srcDirPath = 'src'
+  tmpDirPath = '.tmp_lsc_flow'
+  flowArgs = parseArgs(argv, srcDirPath, tmpDirPath)
+
+  // fs.appendFileSync('.log', flowArgs.toString())
+
+  compileDirToTemp(srcDirPath, tmpDirPath)
+  {stdout: rawFlowResult, status} = runFlowCmdOnTemp(tmpDirPath, flowArgs)
+  remappedFlowResult = remap(rawFlowResult, tmpDirPath)
+
+  // This breaks things that aren't json
+  result =
+    if argv.includes('--pretty'):
+      JSON.stringify(remappedFlowResult, null, 2)
+    else:
+      JSON.stringify(remappedFlowResult)
+
+  {
+    stdout: result
+    stderr: ''
+    exitCode: status
+  }
+
+export main(argv: Array<string>) =>
+  try:
+    {stdout, stderr, exitCode} = _main(argv)
+    // TODO: be more correct here.
+    process.stderr.write(stderr)
+    process.stdout.write(stdout)
+    process.exit(exitCode)
+  catch err:
+    process.stderr.write(err.message)
+    process.exit(3)
+
+if require.main == module:
+  main(process.argv)
+
+

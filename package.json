@@ -8,7 +8,8 @@
     "lint": "eslint --ext .js,.lsc src",
     "build": "babel src -x .lsc --out-dir dist",
     "dev": "$npm_execpath run build -- --watch",
-    "prepublish": "$npm_execpath run build"
+    "prepublish": "$npm_execpath run build",
+    "postinstall": "cp .vscode/settings.example.json .vscode/settings.json && sed -i '' \"s ROOT_REPLACE_ME $(pwd) \" .vscode/settings.json"
   },
   "devDependencies": {
     "@oigroup/babel-preset-lightscript": "^3.0.0-beta.3",
@@ -18,6 +19,9 @@
   },
   "dependencies": {
     "@oigroup/babel-plugin-lightscript": "^3.0.0-beta.3",
-    "babel-core": "^6.26.0"
+    "babel-core": "^6.26.0",
+    "flow-bin": "^0.57.2",
+    "lodash": "^4.17.4",
+    "source-map": "^0.6.1"
   }
 }

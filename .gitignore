@@ -1,2 +1,5 @@
 node_modules
 dist
+.tmp_lsc_flow
+.vscode/settings.json
+.log

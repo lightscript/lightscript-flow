@@ -1,6 +1,0 @@
-/* eslint-disable no-console */
-
-console.log('hello world') 
-
-bar = 1
-console.log(bar)

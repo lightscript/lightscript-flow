@@ -1,0 +1,25 @@
+{
+  //
+  // DO NOT EDIT THE settings.json FILE DIRECTLY
+  //
+  // It is copied from settings.example.json
+  // so that the pathToFlow can be customized.
+  // see https://github.com/Microsoft/vscode/issues/2809
+  //
+  "git.ignoreLimitWarning": true,
+  "javascript.validate.enable": false,
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "lightscript"
+  ],
+  "flow.useNPMPackagedFlow": false,
+  "flow.fileExtensions": [
+      ".lsc",
+      ".js"
+  ],
+  "flow.pathToFlow": "ROOT_REPLACE_ME/lsc-flow",
+  "flow.showStatus": false,
+  "flow.runOnAllFiles": true,
+  "flow.runOnEdit": false
+}
